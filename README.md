@@ -47,9 +47,7 @@ Install Bazelisk from the releases page and ensure `bazel.exe` is on your PATH.
 
 ---
 
-## 1) Get the sample
-
-Unzip the archive you downloaded from this chat, then:
+## 1) Clone the repo
 
 ```bash
 cd pyrefly_bazel_sample
