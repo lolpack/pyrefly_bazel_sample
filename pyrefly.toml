@@ -1,0 +1,8 @@
+skip-interpreter-query = true
+disable-search-path-heuristics = true
+site-package-path = [""]
+
+[build-system]
+type = "buck"
+isolation-dir = "pyrefly"
+extra-metadata = ["--oncall=pyre", "--client-metadata=id=pyrefly"]
