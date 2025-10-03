@@ -1,6 +1,6 @@
 # Pyrefly + Bazel (Python) — Sample Project
 
-WARNING - EXPERIMENTAL I HAVE NO IDEA IF THIS WORKS YET
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ WARNING - EXPERIMENTAL I HAVE NO IDEA IF THIS WORKS YET
 
 This is a **minimal, working** sample that shows how to integrate Bazel with Pyrefly by replacing the existing `buck2 bxl prelude//python/sourcedb/pyrefly.bxl:main` call with a **script that shells out to Bazel** and emits the **Pyrefly source DB JSON**.
 
