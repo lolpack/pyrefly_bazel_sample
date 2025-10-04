@@ -9,3 +9,5 @@ def command(func: Callable[..., None]) -> Callable[..., None]:
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
     return wrapper
+
+i: int = "HELLO"

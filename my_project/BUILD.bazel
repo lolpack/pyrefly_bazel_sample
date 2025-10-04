@@ -1,7 +1,22 @@
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+py_library(
+    name = "core_lib",
+    srcs = [
+        "__init__.py",
+        "app.py",
+        "utils/__init__.py",
+        "utils/formatting.py",
+    ],
+    deps = [
+        "//click:click_lib",
+        "//libs/common:common_utils",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 py_binary(
     name = "main",
     srcs = ["main.py"],
-    deps = ["//click:click_lib"],
+    deps = [":core_lib"],
 )

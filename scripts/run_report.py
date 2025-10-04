@@ -1,10 +1,10 @@
 from click import command, echo
-from my_project import greeting
+from plugins import summarize
 
 
 @command
 def main() -> None:
-    echo(greeting("my_project"))
+    echo(summarize(["daily", "weekly", "monthly"]))
 
 
 if __name__ == "__main__":

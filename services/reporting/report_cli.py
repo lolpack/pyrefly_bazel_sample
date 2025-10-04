@@ -1,10 +1,10 @@
 from click import command, echo
-from my_project import greeting
+from services.reporting import build_report
 
 
 @command
 def main() -> None:
-    echo(greeting("my_project"))
+    echo(build_report("cli-report"))
 
 
 if __name__ == "__main__":
