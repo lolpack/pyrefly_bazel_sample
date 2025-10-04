@@ -1,0 +1,11 @@
+load("@rules_python//python:defs.bzl", "py_library")
+
+py_library(
+    name = "analyzer",
+    srcs = [
+        "__init__.py",
+        "analyzer.py",
+    ],
+    deps = ["//services/reporting:reporting_lib"],
+    visibility = ["//visibility:public"],
+)

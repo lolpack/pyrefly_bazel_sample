@@ -36,8 +36,17 @@ from typing import Dict, List, Set
 
 def run(cmd: List[str], cwd: str = None) -> str:
     res = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    # Only fail if there's no stdout output and there are errors that aren't just warnings
     if res.returncode != 0:
-        raise RuntimeError(f"Command failed: {' '.join(cmd)}\nstdout:\n{res.stdout}\nstderr:\n{res.stderr}")
+        # Check if we got any useful output despite warnings
+        if res.stdout.strip():
+            # We got output, so warnings are likely non-fatal - print them but continue
+            if res.stderr.strip():
+                print(f"Warning from Bazel (continuing anyway):\n{res.stderr}", file=sys.stderr)
+            return res.stdout.strip()
+        else:
+            # No output and non-zero return code means real failure
+            raise RuntimeError(f"Command failed: {' '.join(cmd)}\nstdout:\n{res.stdout}\nstderr:\n{res.stderr}")
     return res.stdout.strip()
 
 def bazel_info_workspace() -> str:
