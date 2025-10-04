@@ -3,6 +3,6 @@ disable-search-path-heuristics = true
 site-package-path = [""]
 
 [build-system]
-type = "buck"
-isolation-dir = "pyrefly"
-extra-metadata = ["--oncall=pyre", "--client-metadata=id=pyrefly"]
+type = "query-script"
+command = "python3"
+args = ["tools/pyrefly_bazel_query.py"]
