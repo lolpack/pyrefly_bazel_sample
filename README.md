@@ -16,6 +16,9 @@ It contains:
   - builds a JSON **file-path DB** in the shape Pyrefly expects
 - Step‑by‑step instructions for installing Bazel and running everything (no prior Bazel knowledge needed).
 
+## Example in the IDE
+
+Observe the file is not reachable through Pyrefly's normal pathing finding heurisitics. Wait for the build script to run and the module mapping now finds the correct file.
 ![Pyrefly + Bazel IDE walkthrough](ide_sample.gif)
 
 ---
