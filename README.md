@@ -16,7 +16,7 @@ It contains:
   - builds a JSON **file-path DB** in the shape Pyrefly expects
 - Step‑by‑step instructions for installing Bazel and running everything (no prior Bazel knowledge needed).
 
-<video src="ide_example.mp4" autoplay loop muted playsinline controls style="max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 6px; margin-top: 1rem;"></video>
+![Pyrefly + Bazel IDE walkthrough](ide_example.gif)
 
 ---
 
