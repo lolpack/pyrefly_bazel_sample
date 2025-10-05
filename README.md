@@ -21,6 +21,8 @@ It contains:
 ## Example in the IDE
 
 Observe the file is not reachable through Pyrefly's normal pathing finding heurisitics. Wait for the build script to run and the module mapping now finds the correct file.
+
+
 ![Pyrefly + Bazel IDE walkthrough](ide_sample.gif)
 
 ---
