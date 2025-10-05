@@ -1,0 +1,144 @@
+{
+  "commands": {
+    "[\"query\", \"kind('py_.* rule', //...)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//click:click_lib\n//colorama:colorama_lib\n//libs/common:common_utils\n//my_project:core_lib\n//my_project:main\n//plugins:analyzer\n//scripts:run_report\n//services/reporting:report_cli\n//services/reporting:reporting_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //click:click_lib)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//click:__init__.py\n//click:core.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //click:click_lib)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//colorama:colorama_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//click:click_lib\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_library rule //click:click_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //colorama:colorama_lib)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//colorama:__init__.py\n//colorama:ansi.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //colorama:colorama_lib)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//colorama:colorama_lib\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_library rule //colorama:colorama_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //libs/common:common_utils)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//libs/common:__init__.py\n//libs/common:formatters.py\n//libs/common:parsers.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //libs/common:common_utils)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//colorama:colorama_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//libs/common:common_utils\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_library rule //libs/common:common_utils\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //my_project:core_lib)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//my_project:__init__.py\n//my_project:app.py\n//my_project:utils/__init__.py\n//my_project:utils/formatting.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //my_project:core_lib)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//click:click_lib\n//libs/common:common_utils\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//my_project:core_lib\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_library rule //my_project:core_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //my_project:main)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//my_project:main.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //my_project:main)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//my_project:core_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//my_project:main\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_binary rule //my_project:main\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //plugins:analyzer)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//plugins:__init__.py\n//plugins:analyzer.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //plugins:analyzer)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//services/reporting:reporting_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//plugins:analyzer\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_library rule //plugins:analyzer\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //scripts:run_report)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//scripts:run_report.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //scripts:run_report)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//click:click_lib\n//plugins:analyzer\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//scripts:run_report\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_binary rule //scripts:run_report\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //services/reporting:report_cli)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//services/reporting:report_cli.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //services/reporting:report_cli)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//services/reporting:reporting_lib\n//click:click_lib\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//services/reporting:report_cli\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_binary rule //services/reporting:report_cli\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('srcs', //services/reporting:reporting_lib)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//services/reporting:__init__.py\n//services/reporting:generator.py\n//services/reporting:metrics.py\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"labels('deps', //services/reporting:reporting_lib)\", \"--keep_going\", \"--noshow_progress\"]": {
+      "stdout": "//libs/common:common_utils\n",
+      "stderr": "",
+      "returncode": 0
+    },
+    "[\"query\", \"//services/reporting:reporting_lib\", \"--keep_going\", \"--noshow_progress\", \"--output\", \"label_kind\"]": {
+      "stdout": "py_library rule //services/reporting:reporting_lib\n",
+      "stderr": "",
+      "returncode": 0
+    }
+  }
+}

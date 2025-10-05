@@ -1,0 +1,2 @@
+# Keep a separate pyrefly config for CI until build configuration is supported
+project-includes = ["tools", "tests"]

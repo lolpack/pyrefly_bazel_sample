@@ -2,15 +2,38 @@
 
 ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ WARNING - EXPERIMENTAL I HAVE NO IDEA IF THIS WORKS YET
 
-This is a **minimal, working** sample that shows how to integrate Bazel with Pyrefly by replacing the existing `buck2 bxl prelude//python/sourcedb/pyrefly.bxl:main` call with a **script that shells out to Bazel** and emits the **Pyrefly source DB JSON**.
+This is a **minimal, working** sample that shows how to integrate Bazel with Pyrefly by calling a **script that shells out to Bazel** and emits the **Pyrefly source DB JSON**.
 
 It contains:
 - A tiny Python workspace with three packages: `colorama`, `click` (both stubbed), and `my_project` (a runnable binary).
+- The reusable pieces you likely want to copy into your own repo:
+  - `tools/pyrefly_bazel_query.py`
+  - `pyrefly.toml`
+- Everything else (fixtures, BUILD files, tests) exists to showcase the workflow end-to-end.
 - A script: `tools/pyrefly_bazel_query.py` that:
   - accepts repeated `--file <path>` args
   - runs `bazel query` to discover the owning targets + direct deps
   - builds a JSON **file-path DB** in the shape Pyrefly expects
 - Step‑by‑step instructions for installing Bazel and running everything (no prior Bazel knowledge needed).
+
+---
+
+## Testing
+
+Use a virtual environment and install the optional test dependencies defined in `pyproject.toml`:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install ".[test]"
+pytest
+pyrefly check -c pyrefly-ci.toml
+```
+
+> The pytest suite stubs Bazel with a lightweight shim so you can run it offline, while still exercising the real query script end-to-end.
+
+
 
 ---
 
@@ -158,30 +181,6 @@ Expected JSON **shape** (values will show your absolute workspace path and Pytho
 
 ---
 
-## 4) Wire this into Pyrefly
+## Contributing
 
-In Pyrefly’s build integration, where you currently do:
-
-```rust
-let mut cmd = Command::new("buck2");
-cmd.arg("bxl");
-cmd.arg("--reuse-current-config");
-cmd.arg("prelude//python/sourcedb/pyrefly.bxl:main");
-cmd.arg("--");
-cmd.args(files.flat_map(|f| ["--file", f]));
-cmd.current_dir(cwd);
-```
-
-Replace that with (conceptually):
-
-```rust
-let mut cmd = Command::new("python3");
-cmd.arg("tools/pyrefly_bazel_query.py");
-cmd.arg("--");
-cmd.args(files.flat_map(|f| ["--file", f]));
-cmd.current_dir(cwd);
-```
-
-…or call the script directly if you make it executable and on your PATH.
-
-The script’s **stdout** is the JSON blob (as bytes), ready for Pyrefly to consume.
+We welcome improvements! See `contributors.md` for guidelines on filing issues and preparing pull requests.

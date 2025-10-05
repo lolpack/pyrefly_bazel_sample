@@ -1,0 +1,77 @@
+{
+  "db": {
+    "colorama": {
+      "srcs": {
+        "colorama": [
+          "colorama/__init__.py"
+        ],
+        "colorama.ansi": [
+          "colorama/ansi.py"
+        ]
+      },
+      "deps": [],
+      "python_version": "__PY_VERSION__",
+      "python_platform": "__PY_PLATFORM__"
+    },
+    "click": {
+      "srcs": {
+        "click": [
+          "click/__init__.py"
+        ],
+        "click.core": [
+          "click/core.py"
+        ]
+      },
+      "deps": [
+        "colorama"
+      ],
+      "python_version": "__PY_VERSION__",
+      "python_platform": "__PY_PLATFORM__"
+    },
+    "libs": {
+      "srcs": {
+        "libs.common": [
+          "libs/common/__init__.py"
+        ],
+        "libs.common.formatters": [
+          "libs/common/formatters.py"
+        ],
+        "libs.common.parsers": [
+          "libs/common/parsers.py"
+        ]
+      },
+      "deps": [
+        "colorama"
+      ],
+      "python_version": "__PY_VERSION__",
+      "python_platform": "__PY_PLATFORM__"
+    },
+    "my_project": {
+      "srcs": {
+        "my_project": [
+          "my_project/__init__.py"
+        ],
+        "my_project.app": [
+          "my_project/app.py"
+        ],
+        "my_project.utils": [
+          "my_project/utils/__init__.py"
+        ],
+        "my_project.utils.formatting": [
+          "my_project/utils/formatting.py"
+        ],
+        "main": [
+          "my_project/main.py"
+        ]
+      },
+      "deps": [
+        "click",
+        "libs",
+        "my_project"
+      ],
+      "python_version": "__PY_VERSION__",
+      "python_platform": "__PY_PLATFORM__"
+    }
+  },
+  "root": "__WORKSPACE_ROOT__"
+}

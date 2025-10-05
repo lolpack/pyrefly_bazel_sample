@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+import json
+import os
+import sys
+from pathlib import Path
+
+
+def main() -> int:
+    mapping_path = os.environ.get("BAZEL_STUB_FIXTURES")
+    workspace_root = os.environ.get("BAZEL_STUB_WORKSPACE", "")
+    log_path = os.environ.get("BAZEL_STUB_LOG")
+    args = sys.argv[1:]
+
+    if log_path:
+        Path(log_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(log_path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(args) + "\n")
+
+    if not args:
+        print("No Bazel command provided", file=sys.stderr)
+        return 2
+
+    if args[0] == "info" and args[1:] == ["workspace"]:
+        if not workspace_root:
+            print("BAZEL_STUB_WORKSPACE not set", file=sys.stderr)
+            return 3
+        print(workspace_root)
+        return 0
+
+    if not mapping_path:
+        print("BAZEL_STUB_FIXTURES not set", file=sys.stderr)
+        return 4
+
+    command_map = json.loads(Path(mapping_path).read_text(encoding="utf-8"))
+    commands = command_map.get("commands", {})
+    key = json.dumps(args)
+    entry = commands.get(key)
+    if entry is None:
+        print(f"Unknown Bazel stub command: {args}", file=sys.stderr)
+        return 5
+
+    stdout = entry.get("stdout", "")
+    stderr = entry.get("stderr", "")
+    returncode = int(entry.get("returncode", 0))
+
+    if stdout:
+        sys.stdout.write(stdout)
+    if stderr:
+        sys.stderr.write(stderr)
+
+    return returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())
