@@ -32,18 +32,52 @@ import os
 import subprocess
 import sys
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Any, Dict, List, MutableMapping, Optional, Set, TypedDict
 
-def run(cmd: List[str], cwd: str = None) -> str:
+
+class TargetInfo(TypedDict):
+    """Describes the metadata we cache for each Bazel python target."""
+
+    kind: str
+    src_paths: List[str]
+    dist: str
+    deps_labels: List[str]
+
+
+class DistributionEntry(TypedDict):
+    """Represents a single distribution entry in the result database."""
+
+    srcs: Dict[str, List[str]]
+    deps: List[str]
+    python_version: str
+    python_platform: str
+
+
+class BuildDbResult(TypedDict):
+    """Final structure returned by build_db_for_files."""
+
+    db: Dict[str, DistributionEntry]
+    root: str
+
+def run(cmd: List[str], cwd: Optional[str] = None) -> str:
     res = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    # Only fail if there's no stdout output and there are errors that aren't just warnings
     if res.returncode != 0:
-        raise RuntimeError(f"Command failed: {' '.join(cmd)}\nstdout:\n{res.stdout}\nstderr:\n{res.stderr}")
+        # Check if we got any useful output despite warnings
+        if res.stdout.strip():
+            # We got output, so warnings are likely non-fatal - print them but continue
+            if res.stderr.strip():
+                print(f"Warning from Bazel (continuing anyway):\n{res.stderr}", file=sys.stderr)
+            return res.stdout.strip()
+        else:
+            # No output and non-zero return code means real failure
+            raise RuntimeError(f"Command failed: {' '.join(cmd)}\nstdout:\n{res.stdout}\nstderr:\n{res.stderr}")
     return res.stdout.strip()
 
 def bazel_info_workspace() -> str:
     return run(["bazel", "info", "workspace"])
 
-def bazel_query(query: str, output: str = None) -> List[str]:
+def bazel_query(query: str, output: Optional[str] = None) -> List[str]:
     args = ["bazel", "query", query, "--keep_going", "--noshow_progress"]
     if output:
         args.extend(["--output", output])
@@ -100,24 +134,36 @@ def system_python_platform() -> str:
         return "windows"
     return p
 
-def collect_py_target_info(target_label: str, cache: Dict[str, dict]) -> dict:
+label_kind_cache: Dict[str, str] = {}
+
+
+def cached_label_kind(label: str) -> str:
+    kind = label_kind_cache.get(label)
+    if kind is not None:
+        return kind
+    kind = label_kind(label)
+    label_kind_cache[label] = kind
+    return kind
+
+
+def collect_py_target_info(target_label: str, cache: MutableMapping[str, TargetInfo]) -> TargetInfo:
     if target_label in cache:
         return cache[target_label]
 
-    kind = label_kind(target_label)
+    kind = cached_label_kind(target_label)
     file_labels = bazel_query(f"labels('srcs', {target_label})")
     src_paths = [file_label_to_path(fl) for fl in file_labels]
 
     dep_labels = bazel_query(f"labels('deps', {target_label})")
     py_dep_labels = []
     for dl in dep_labels:
-        k = label_kind(dl)
+        k = cached_label_kind(dl)
         if k.startswith("py_"):
             py_dep_labels.append(dl)
 
     dist = infer_dist_name(src_paths) if src_paths else "unknown"
 
-    info = {
+    info: TargetInfo = {
         "kind": kind,
         "src_paths": src_paths,
         "dist": dist,
@@ -128,7 +174,7 @@ def collect_py_target_info(target_label: str, cache: Dict[str, dict]) -> dict:
 
 # Replace the existing build_db_for_files(...) with this implementation.
 
-def build_db_for_files(file_paths: List[str]) -> dict:
+def build_db_for_files(file_paths: List[str]) -> BuildDbResult:
     workspace = bazel_info_workspace()
 
     # 1) gather all python targets in workspace
@@ -165,11 +211,11 @@ def build_db_for_files(file_paths: List[str]) -> dict:
             requested_targets.add(o)
 
     # 4) now traverse the targets and their direct deps (depth-first) and collect info
-    info_cache: Dict[str, dict] = {}
+    info_cache: MutableMapping[str, TargetInfo] = {}
     seen: Set[str] = set()
     order: List[str] = []
 
-    def dfs(label: str):
+    def dfs(label: str) -> None:
         if label in seen:
             return
         seen.add(label)
@@ -182,11 +228,11 @@ def build_db_for_files(file_paths: List[str]) -> dict:
         dfs(t)
 
     # 5) build result_db in the same way as before
-    result_db: Dict[str, dict] = {}
+    result_db: Dict[str, DistributionEntry] = {}
     py_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
     py_plat = system_python_platform()
 
-    def add_entry(dist: str, srcs_map: Dict[str, List[str]], deps_dists: List[str]):
+    def add_entry(dist: str, srcs_map: Dict[str, List[str]], deps_dists: List[str]) -> None:
         if dist not in result_db:
             result_db[dist] = {
                 "srcs": {},
