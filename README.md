@@ -1,6 +1,8 @@
 # Pyrefly + Bazel (Python) — Sample Project
 
-⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ WARNING - EXPERIMENTAL I HAVE NO IDEA IF THIS WORKS YET
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ WARNING - EXPERIMENTAL
+
+Waiting for Pyrefly support to land: https://github.com/facebook/pyrefly/pull/1250
 
 This is a **minimal, working** sample that shows how to integrate Bazel with Pyrefly by calling a **script that shells out to Bazel** and emits the **Pyrefly source DB JSON**.
 
