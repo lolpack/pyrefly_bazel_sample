@@ -25,7 +25,14 @@ jobs:
           python -m pip install ".[test]"
 
       - name: Install Bazel
-        uses: bazelbuild/setup-bazelisk@v1
+        uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          # Avoid downloading Bazel every time.
+          bazelisk-cache: true
+          # Store build cache per workflow.
+          disk-cache: ${{ github.workflow }}
+          # Share repository cache between workflows.
+          repository-cache: true
 
       - name: Run pytest suite
         run: pytest
