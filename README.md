@@ -1,16 +1,14 @@
 # Pyrefly + Bazel (Python) — Sample Project
 
-⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ WARNING - EXPERIMENTAL
-
-Waiting for Pyrefly support to land: https://github.com/facebook/pyrefly/pull/1250
+⚠️ WARNING - EXPERIMENTAL: Your project size and structure will impact funtionality and performance. Modify the bazel queries in the Python script to suit your needs.
 
 This is a **minimal, working** sample that shows how to integrate Bazel with Pyrefly by calling a **script that shells out to Bazel** and emits the **Pyrefly source DB JSON**.
 
 It contains:
-- A Python workspace with three packages: `colorama`, `click` (both stubbed), and `my_project` (a runnable binary).
-- The reusable pieces you likely want to copy into your own repo:
+- The interesting bits: a sample script to query bazel and pyrefly configuration to point to the script. Use this as a starting point and modify to your project needs:
   - `tools/pyrefly_bazel_query.py`
   - `pyrefly.toml`
+- A Python workspace with three packages: `colorama`, `click` (both stubbed), and `my_project` (a runnable binary).
 - Everything else (fixtures, BUILD files, tests) exists to showcase the workflow end-to-end.
 - A script: `tools/pyrefly_bazel_query.py` that:
   - accepts repeated `--file <path>` args
