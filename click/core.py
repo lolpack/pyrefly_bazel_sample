@@ -10,4 +10,5 @@ def command(func: Callable[..., None]) -> Callable[..., None]:
         return func(*args, **kwargs)
     return wrapper
 
-i: int = "HELLO"
+def type_error() -> None:
+    print(color_text("Number of logs", "blue") + 5) # pyrefly: ignore remove this comment to get a type error

@@ -1,6 +1,6 @@
 skip-interpreter-query = true
 disable-search-path-heuristics = true
-site-package-path = [""]
+site-package-path = ["", ".venv/lib/python3.13/site-packages"]
 
 [build-system]
 type = "query-script"
