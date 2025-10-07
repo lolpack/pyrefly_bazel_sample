@@ -18,15 +18,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Create and activate virtual environment
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
+      - name: Create virtual environment
+        run: python -m venv .venv
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install ".[test]"
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install ".[test]"
 
       - name: Install Bazel
         uses: bazel-contrib/setup-bazel@0.15.0
@@ -39,7 +37,7 @@ jobs:
           repository-cache: true
 
       - name: Run pytest suite
-        run: pytest
+        run: .venv/bin/pytest
 
       - name: Run pyrefly type check
-        run: pyrefly check **/*.py
+        run: .venv/bin/pyrefly check **/*.py
