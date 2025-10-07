@@ -18,7 +18,7 @@ packages = []
 [project.optional-dependencies]
 test = [
   "pytest>=8.2",
-  "pyrefly>=0.1",
+  "pyrefly>=0.36.1",
 ]
 
 [tool.pytest.ini_options]

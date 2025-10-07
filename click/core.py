@@ -10,4 +10,4 @@ def command(func: Callable[..., None]) -> Callable[..., None]:
         return func(*args, **kwargs)
     return wrapper
 
-i: int = "HELLO"
+i: int = "HELLO" # pyrefly: ignore ---- Test that an actual error shows up

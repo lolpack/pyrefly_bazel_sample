@@ -38,4 +38,4 @@ jobs:
         run: pytest
 
       - name: Run pyrefly type check
-        run: pyrefly check -c pyrefly-ci.toml
+        run: pyrefly check **/*.py
