@@ -38,4 +38,4 @@ jobs:
         run: pytest
 
       - name: Run pyrefly type check
-        run: pyrefly check **/*.py
+        run: source .venv/bin/activate && pyrefly check **/*.py
