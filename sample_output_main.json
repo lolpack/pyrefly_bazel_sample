@@ -1,6 +1,6 @@
 {
   "db": {
-    "colorama": {
+    "//colorama:colorama_lib": {
       "srcs": {
         "colorama": [
           "colorama/__init__.py"
@@ -10,10 +10,11 @@
         ]
       },
       "deps": [],
-      "python_version": "3.12",
-      "python_platform": "macosx"
+      "python_version": "3.13",
+      "python_platform": "macosx",
+      "buildfile_path": "//colorama/BUILD.bazel"
     },
-    "click": {
+    "//click:click_lib": {
       "srcs": {
         "click": [
           "click/__init__.py"
@@ -23,22 +24,66 @@
         ]
       },
       "deps": [
-        "colorama"
+        "//colorama:colorama_lib"
       ],
-      "python_version": "3.12",
-      "python_platform": "macosx"
+      "python_version": "3.13",
+      "python_platform": "macosx",
+      "buildfile_path": "//click/BUILD.bazel"
     },
-    "my_project": {
+    "//libs/common:common_utils": {
+      "srcs": {
+        "libs.common": [
+          "libs/common/__init__.py"
+        ],
+        "libs.common.formatters": [
+          "libs/common/formatters.py"
+        ],
+        "libs.common.parsers": [
+          "libs/common/parsers.py"
+        ]
+      },
+      "deps": [
+        "//colorama:colorama_lib"
+      ],
+      "python_version": "3.13",
+      "python_platform": "macosx",
+      "buildfile_path": "//libs/common/BUILD.bazel"
+    },
+    "//my_project:core_lib": {
+      "srcs": {
+        "my_project": [
+          "my_project/__init__.py"
+        ],
+        "my_project.app": [
+          "my_project/app.py"
+        ],
+        "my_project.utils": [
+          "my_project/utils/__init__.py"
+        ],
+        "my_project.utils.formatting": [
+          "my_project/utils/formatting.py"
+        ]
+      },
+      "deps": [
+        "//click:click_lib",
+        "//libs/common:common_utils"
+      ],
+      "python_version": "3.13",
+      "python_platform": "macosx",
+      "buildfile_path": "//my_project/BUILD.bazel"
+    },
+    "//my_project:main": {
       "srcs": {
         "main": [
           "my_project/main.py"
         ]
       },
       "deps": [
-        "click"
+        "//my_project:core_lib"
       ],
-      "python_version": "3.12",
-      "python_platform": "macosx"
+      "python_version": "3.13",
+      "python_platform": "macosx",
+      "buildfile_path": "//my_project/BUILD.bazel"
     }
   },
   "root": "/Users/aaronpollack/dev/pyrefly_bazel_sample"

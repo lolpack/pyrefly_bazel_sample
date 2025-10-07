@@ -41,10 +41,10 @@ from typing import Any, Dict, List, MutableMapping, Optional, Set, TypedDict
 # Uncomment to debug the bazel query
 # -------------------------
 def log(message, file="app.log"):
-    pass
-    # ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # with open(file, "a") as f:
-    #     f.write(f"{ts} - {message}\n")
+    # pass
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(file, "a") as f:
+        f.write(f"{ts} - {message}\n")
 
 
 # -------------------------
