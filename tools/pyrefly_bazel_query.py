@@ -3,126 +3,126 @@
 Bazel-backed source DB query for Pyrefly-style integration.
 
 Usage:
-  python3 tools/pyrefly_bazel_query.py --file path1.py --file path2.py ...
+  python3 tools/pyrefly_bazel_query.py @/path/to/file_list.txt
 
-It prints a JSON object like:
+Output JSON shape:
 
 {
   "db": {
-    "<dist>": {
-      "srcs": { "<module>": ["path/to/file.py"], ... },
-      "deps": ["<dist_dep1>", ...],
-      "python_version": "3.11",
-      "python_platform": "linux|macosx|windows"
+    "//services/reporting:report_cli": {
+      "srcs": { "<module>": ["path/to/file.py", ...], ... },
+      "deps": ["//colorama:colorama_lib", "//services/reporting:reporting_lib", ...],
+      "python_version": "3.12",
+      "python_platform": "macosx",
+      "buildfile_path": "//services/reporting/BUILD.bazel"
     },
     ...
   },
   "root": "/abs/path/to/workspace"
 }
 
-Heuristics:
-- <dist> is inferred from the first path segment of each target's Python sources.
-- For py_library, module keys are full dotted import paths (e.g., "click.core").
-- For py_binary, module keys are shortened to the basename (e.g., "main").
-- Direct dependencies are inferred via Bazel "labels('deps', <label>)" and mapped to their dist names.
+Notes:
+- Keys are ALWAYS unique Bazel labels for the owning targets (no dist heuristics).
+- Deps are emitted as Bazel labels of *python* deps only (py_*).
+- buildfile_path is workspace-relative and prefixed with // (e.g. //pkg/sub/BUILD.bazel).
 """
-import argparse
+from __future__ import annotations
+
 import json
 import os
 import subprocess
 import sys
 from collections import defaultdict
+from datetime import datetime
 from typing import Any, Dict, List, MutableMapping, Optional, Set, TypedDict
 
+# -------------------------
+# Logging
+# Uncomment to debug the bazel query
+# -------------------------
+def log(message, file="app.log"):
+    # pass
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(file, "a") as f:
+        f.write(f"{ts} - {message}\n")
 
+
+# -------------------------
+# Types
+# -------------------------
 class TargetInfo(TypedDict):
-    """Describes the metadata we cache for each Bazel python target."""
-
     kind: str
     src_paths: List[str]
-    dist: str
-    deps_labels: List[str]
+    deps_labels: List[str]  # only py_* deps
 
 
 class DistributionEntry(TypedDict):
-    """Represents a single distribution entry in the result database."""
-
     srcs: Dict[str, List[str]]
-    deps: List[str]
+    deps: List[str]  # Bazel labels
     python_version: str
     python_platform: str
+    buildfile_path: str
 
 
 class BuildDbResult(TypedDict):
-    """Final structure returned by build_db_for_files."""
-
     db: Dict[str, DistributionEntry]
     root: str
 
+
+# -------------------------
+# Bazel helpers
+# -------------------------
 def run(cmd: List[str], cwd: Optional[str] = None) -> str:
     res = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    # Only fail if there's no stdout output and there are errors that aren't just warnings
-    if res.returncode != 0:
-        # Check if we got any useful output despite warnings
-        if res.stdout.strip():
-            # We got output, so warnings are likely non-fatal - print them but continue
-            if res.stderr.strip():
-                print(f"Warning from Bazel (continuing anyway):\n{res.stderr}", file=sys.stderr)
-            return res.stdout.strip()
-        else:
-            # No output and non-zero return code means real failure
-            raise RuntimeError(f"Command failed: {' '.join(cmd)}\nstdout:\n{res.stdout}\nstderr:\n{res.stderr}")
+    # Allow warnings (non-zero) if stdout still produced something useful
+    if res.returncode != 0 and not res.stdout.strip():
+        raise RuntimeError(f"Command failed: {' '.join(cmd)}\nstdout:\n{res.stdout}\nstderr:\n{res.stderr}")
+    if res.stderr.strip():
+        log(f"bazel stderr for {' '.join(cmd)}:\n{res.stderr}", "bazel.log")
     return res.stdout.strip()
+
 
 def bazel_info_workspace() -> str:
     return run(["bazel", "info", "workspace"])
+
 
 def bazel_query(query: str, output: Optional[str] = None) -> List[str]:
     args = ["bazel", "query", query, "--keep_going", "--noshow_progress"]
     if output:
         args.extend(["--output", output])
     out = run(args)
-    lines = [ln.strip() for ln in out.splitlines() if ln.strip()]
-    return lines
+    return [ln.strip() for ln in out.splitlines() if ln.strip()]
+
 
 def label_kind(label: str) -> str:
-    # Returns e.g. "py_library rule //path:target"
+    # "py_library rule //path:target" -> "py_library"
     lines = bazel_query(label, output="label_kind")
+    log(lines, "bazel.log")
     if not lines:
         return ""
-    return lines[0].split()[0]  # "py_library" or "py_binary" etc.
+    return lines[0].split()[0]
+
 
 def file_label_to_path(file_label: str) -> str:
-    # Local file label looks like //pkg:filename.py -> pkg/filename.py
+    # //pkg:filename.py -> pkg/filename.py
     if not file_label.startswith("//"):
-        return file_label  # external or unexpected; return as-is
+        return file_label
     pkg_and_file = file_label[2:]
     if ":" in pkg_and_file:
         pkg, fname = pkg_and_file.split(":", 1)
         return f"{pkg}/{fname}"
-    return pkg_and_file  # fallback
+    return pkg_and_file
 
-def infer_dist_name(src_paths: List[str]) -> str:
-    # Choose the most common top-level directory among srcs
-    counts = defaultdict(int)
-    for p in src_paths:
-        parts = p.split("/")
-        if parts:
-            counts[parts[0]] += 1
-    if not counts:
-        return "unknown"
-    max_count = max(counts.values())
-    candidates = [k for k, v in counts.items() if v == max_count]
-    return sorted(candidates)[0]
 
 def module_name_from_path(path: str) -> str:
-    # Convert path/to/file.py -> path.to.file ; strip .py ; special-case __init__.py
+    # path/to/__init__.py -> path.to ; path/to/file.py -> path.to.file
     if not path.endswith(".py"):
         return path.replace("/", ".")
     mod = path[:-3].replace("/", ".")
     if mod.endswith(".__init__"):
         mod = mod[: -len(".__init__")]
     return mod
+
 
 def system_python_platform() -> str:
     p = sys.platform
@@ -134,19 +134,57 @@ def system_python_platform() -> str:
         return "windows"
     return p
 
+
 label_kind_cache: Dict[str, str] = {}
 
 
 def cached_label_kind(label: str) -> str:
-    kind = label_kind_cache.get(label)
-    if kind is not None:
-        return kind
-    kind = label_kind(label)
-    label_kind_cache[label] = kind
-    return kind
+    k = label_kind_cache.get(label)
+    if k is not None:
+        return k
+    k = label_kind(label)
+    label_kind_cache[label] = k
+    return k
 
 
+def buildfile_for_label(label: str, workspace: str) -> str:
+    """
+    //pkg/sub:target -> /abs/workspace/pkg/sub/BUILD.bazel | BUILD (absolute path)
+    """
+    if not label.startswith("//"):
+        return ""
+    pkg = label[2:].split(":", 1)[0]
+    cands = [os.path.join(workspace, pkg, "BUILD.bazel"), os.path.join(workspace, pkg, "BUILD")]
+    for cand in cands:
+        if os.path.exists(cand):
+            return cand
+    return ""
+
+
+def relativize_buildfile_path(abs_buildfile: str, workspace: str) -> str:
+    """
+    Convert an absolute buildfile path under the workspace to //-prefixed workspace-relative form.
+    /abs/workspace/pkg/sub/BUILD.bazel -> //pkg/sub/BUILD.bazel
+    If not under workspace, return as-is.
+    """
+    if not abs_buildfile:
+        return ""
+    # Normalize to avoid subtle path issues
+    workspace = os.path.normpath(workspace)
+    abs_buildfile = os.path.normpath(abs_buildfile)
+    if abs_buildfile.startswith(workspace + os.sep):
+        rel = os.path.relpath(abs_buildfile, workspace)
+        # Always use forward slashes in Bazel-style paths
+        rel = rel.replace(os.sep, "/")
+        return f"//{rel}"
+    return abs_buildfile
+
+
+# -------------------------
+# Collect per-target info
+# -------------------------
 def collect_py_target_info(target_label: str, cache: MutableMapping[str, TargetInfo]) -> TargetInfo:
+    log([target_label], "bazel.log")
     if target_label in cache:
         return cache[target_label]
 
@@ -154,66 +192,57 @@ def collect_py_target_info(target_label: str, cache: MutableMapping[str, TargetI
     file_labels = bazel_query(f"labels('srcs', {target_label})")
     src_paths = [file_label_to_path(fl) for fl in file_labels]
 
-    dep_labels = bazel_query(f"labels('deps', {target_label})")
-    py_dep_labels = []
-    for dl in dep_labels:
+    dep_labels_all = bazel_query(f"labels('deps', {target_label})")
+    py_dep_labels: List[str] = []
+    for dl in dep_labels_all:
         k = cached_label_kind(dl)
         if k.startswith("py_"):
             py_dep_labels.append(dl)
 
-    dist = infer_dist_name(src_paths) if src_paths else "unknown"
-
     info: TargetInfo = {
         "kind": kind,
         "src_paths": src_paths,
-        "dist": dist,
         "deps_labels": py_dep_labels,
     }
     cache[target_label] = info
     return info
 
-# Replace the existing build_db_for_files(...) with this implementation.
 
+# -------------------------
+# Build database (labels as keys)
+# -------------------------
 def build_db_for_files(file_paths: List[str]) -> BuildDbResult:
     workspace = bazel_info_workspace()
 
-    # 1) gather all python targets in workspace
+    # 1) enumerate all python targets
     all_py_targets = bazel_query("kind('py_.* rule', //...)")
 
-    # 2) build file -> owning-targets map
+    # 2) map "file path -> owning targets"
     file_to_targets: Dict[str, List[str]] = {}
     for tgt in all_py_targets:
-        # get srcs labels for this target
         file_labels = bazel_query(f"labels('srcs', {tgt})")
         for fl in file_labels:
-            # convert label to workspace-relative path (e.g. //pkg:foo.py -> pkg/foo.py)
             path = file_label_to_path(fl)
             file_to_targets.setdefault(path, []).append(tgt)
 
-    # 3) determine target set for the requested files (normalize paths relative to workspace)
+    # 3) determine owning targets for requested files
     requested_targets: Set[str] = set()
     for fp in file_paths:
         abs_fp = os.path.abspath(fp)
-        if abs_fp.startswith(workspace):
-            rel = os.path.relpath(abs_fp, workspace)
-        else:
-            rel = fp
-        # try exact match
+        rel = os.path.relpath(abs_fp, workspace) if abs_fp.startswith(workspace) else fp
         owners = file_to_targets.get(rel, [])
-        # also try matching by basename or subpath variants if needed
         if not owners:
-            # attempt to match label forms: sometimes label->path mapping produces pkg/foo.py vs pkg/sub:foo.py variants
-            # try to find any key that endswith the rel (best-effort)
+            # fall back: suffix match
             for key, tgts in file_to_targets.items():
                 if key.endswith(rel):
                     owners.extend(tgts)
         for o in owners:
             requested_targets.add(o)
 
-    # 4) now traverse the targets and their direct deps (depth-first) and collect info
+    # 4) DFS through py deps
     info_cache: MutableMapping[str, TargetInfo] = {}
     seen: Set[str] = set()
-    order: List[str] = []
+    topo: List[str] = []
 
     def dfs(label: str) -> None:
         if label in seen:
@@ -222,36 +251,44 @@ def build_db_for_files(file_paths: List[str]) -> BuildDbResult:
         info = collect_py_target_info(label, info_cache)
         for d in info["deps_labels"]:
             dfs(d)
-        order.append(label)
+        topo.append(label)
 
     for t in sorted(requested_targets):
         dfs(t)
 
-    # 5) build result_db in the same way as before
+    # 5) Build result database with LABEL KEYS and LABEL DEPS
     result_db: Dict[str, DistributionEntry] = {}
     py_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
     py_plat = system_python_platform()
 
-    def add_entry(dist: str, srcs_map: Dict[str, List[str]], deps_dists: List[str]) -> None:
-        if dist not in result_db:
-            result_db[dist] = {
+    def add_entry(label_key: str, srcs_map: Dict[str, List[str]], dep_labels: List[str], abs_buildfile_path: str) -> None:
+        buildfile_path = relativize_buildfile_path(abs_buildfile_path, workspace)
+        if label_key not in result_db:
+            result_db[label_key] = {
                 "srcs": {},
                 "deps": [],
                 "python_version": py_ver,
                 "python_platform": py_plat,
+                "buildfile_path": buildfile_path,
             }
-        for mod, paths in srcs_map.items():
-            result_db[dist]["srcs"].setdefault(mod, [])
-            for p in paths:
-                if p not in result_db[dist]["srcs"][mod]:
-                    result_db[dist]["srcs"][mod].append(p)
-        for d in deps_dists:
-            if d not in result_db[dist]["deps"]:
-                result_db[dist]["deps"].append(d)
+        ent = result_db[label_key]
+        # If the entry already existed (multiple passes), ensure buildfile_path is set to the //-form
+        if not ent.get("buildfile_path"):
+            ent["buildfile_path"] = buildfile_path
 
-    for label in order:
+        for mod, paths in srcs_map.items():
+            ent["srcs"].setdefault(mod, [])
+            for p in paths:
+                if p not in ent["srcs"][mod]:
+                    ent["srcs"][mod].append(p)
+        for d in dep_labels:
+            if d not in ent["deps"]:
+                ent["deps"].append(d)
+
+    for label in topo:
         info = info_cache[label]
-        dist = info["dist"]
+
+        # module map: py_binary shortens to basename, py_library keeps full dotted path
         module_map: Dict[str, List[str]] = {}
         if info["kind"].startswith("py_binary"):
             for p in info["src_paths"]:
@@ -263,31 +300,47 @@ def build_db_for_files(file_paths: List[str]) -> BuildDbResult:
                 mod = module_name_from_path(p)
                 module_map.setdefault(mod, []).append(p)
 
-        deps_dists: List[str] = []
-        for dl in info["deps_labels"]:
-            d_info = info_cache.get(dl) or collect_py_target_info(dl, info_cache)
-            if d_info["dist"] not in deps_dists:
-                deps_dists.append(d_info["dist"])
+        abs_buildfile_path = buildfile_for_label(label, workspace)
+        add_entry(label, module_map, info["deps_labels"], abs_buildfile_path)
 
-        add_entry(dist, module_map, deps_dists)
-
-    return {
-        "db": result_db,
-        "root": workspace,
-    }
+    return {"db": result_db, "root": workspace}
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Query Bazel for Python source DB (Pyrefly-style).")
-    ap.add_argument("--file", dest="files", action="append", default=[], help="A Python source file (repeatable).")
-    args = ap.parse_args()
-
-    if not args.files:
-        print(json.dumps({"error": "No --file arguments provided"}), flush=True)
+# -------------------------
+# File-list parsing + CLI
+# -------------------------
+def parse_file_list(file_path: str) -> List[str]:
+    """Reads the file and extracts all file paths after '--file' lines."""
+    files: List[str] = []
+    try:
+        with open(file_path, "r") as f:
+            lines = [line.strip() for line in f if line.strip()]
+        for i, line in enumerate(lines):
+            if line == "--file" and i + 1 < len(lines):
+                files.append(lines[i + 1])
+    except Exception as e:
+        print(json.dumps({"error": f"Failed to read file list: {e}"}), flush=True)
         sys.exit(2)
+    return files
 
-    out = build_db_for_files(args.files)
-    print(json.dumps(out, indent=2), flush=True)
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "Usage: script.py @/path/to/list.txt"}), flush=True)
+        sys.exit(2)
+
+    arg = sys.argv[1]
+    if not arg.startswith("@"):
+        print(json.dumps({"error": "Expected an argument starting with @"}), flush=True)
+        sys.exit(2)
+
+    file_list_path = arg[1:]
+    files = parse_file_list(file_list_path)
+
+    if not files:
+        print(json.dumps({"error": "No files found in list"}), flush=True)
+        sys.exit(2)
+
+    out = build_db_for_files(files)
+    log(json.dumps(out, indent=2), "dumps.log")
+    print(json.dumps(out, indent=2), flush=True)

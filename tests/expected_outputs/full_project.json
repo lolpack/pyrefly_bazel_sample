@@ -1,6 +1,6 @@
 {
   "db": {
-    "colorama": {
+    "//colorama:colorama_lib": {
       "srcs": {
         "colorama": [
           "colorama/__init__.py"
@@ -11,9 +11,10 @@
       },
       "deps": [],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//colorama/BUILD.bazel"
     },
-    "libs": {
+    "//libs/common:common_utils": {
       "srcs": {
         "libs.common": [
           "libs/common/__init__.py"
@@ -26,12 +27,13 @@
         ]
       },
       "deps": [
-        "colorama"
+        "//colorama:colorama_lib"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//libs/common/BUILD.bazel"
     },
-    "click": {
+    "//click:click_lib": {
       "srcs": {
         "click": [
           "click/__init__.py"
@@ -41,12 +43,13 @@
         ]
       },
       "deps": [
-        "colorama"
+        "//colorama:colorama_lib"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//click/BUILD.bazel"
     },
-    "my_project": {
+    "//my_project:core_lib": {
       "srcs": {
         "my_project": [
           "my_project/__init__.py"
@@ -59,20 +62,30 @@
         ],
         "my_project.utils.formatting": [
           "my_project/utils/formatting.py"
-        ],
+        ]
+      },
+      "deps": [
+        "//click:click_lib",
+        "//libs/common:common_utils"
+      ],
+      "python_version": "__PY_VERSION__",
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//my_project/BUILD.bazel"
+    },
+    "//my_project:main": {
+      "srcs": {
         "main": [
           "my_project/main.py"
         ]
       },
       "deps": [
-        "click",
-        "libs",
-        "my_project"
+        "//my_project:core_lib"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//my_project/BUILD.bazel"
     },
-    "services": {
+    "//services/reporting:reporting_lib": {
       "srcs": {
         "services.reporting": [
           "services/reporting/__init__.py"
@@ -82,20 +95,16 @@
         ],
         "services.reporting.metrics": [
           "services/reporting/metrics.py"
-        ],
-        "report_cli": [
-          "services/reporting/report_cli.py"
         ]
       },
       "deps": [
-        "libs",
-        "services",
-        "click"
+        "//libs/common:common_utils"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//services/reporting/BUILD.bazel"
     },
-    "plugins": {
+    "//plugins:analyzer": {
       "srcs": {
         "plugins": [
           "plugins/__init__.py"
@@ -105,23 +114,39 @@
         ]
       },
       "deps": [
-        "services"
+        "//services/reporting:reporting_lib"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//plugins/BUILD.bazel"
     },
-    "scripts": {
+    "//scripts:run_report": {
       "srcs": {
         "run_report": [
           "scripts/run_report.py"
         ]
       },
       "deps": [
-        "click",
-        "plugins"
+        "//click:click_lib",
+        "//plugins:analyzer"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//scripts/BUILD.bazel"
+    },
+    "//services/reporting:report_cli": {
+      "srcs": {
+        "report_cli": [
+          "services/reporting/report_cli.py"
+        ]
+      },
+      "deps": [
+        "//services/reporting:reporting_lib",
+        "//click:click_lib"
+      ],
+      "python_version": "__PY_VERSION__",
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//services/reporting/BUILD.bazel"
     }
   },
   "root": "__WORKSPACE_ROOT__"

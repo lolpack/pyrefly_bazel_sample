@@ -4,3 +4,5 @@ bazel-*
 .bazel*
 tools/__pycache__/
 pyrefly_bazel_sample.egg-info
+*.pyc
+*.log

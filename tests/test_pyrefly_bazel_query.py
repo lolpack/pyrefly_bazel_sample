@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict, Iterable, List
@@ -47,18 +48,32 @@ def _run_tool(
     extra_env: Dict[str, str] | None = None,
     log_path: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    cmd: List[str] = [sys.executable, str(REPO_ROOT / "tools" / "pyrefly_bazel_query.py")]
-    for file_arg in files:
-        cmd.extend(["--file", file_arg])
+    file_args = list(files)
+    with tempfile.NamedTemporaryFile("w", delete=False) as tmp:
+        for file_arg in file_args:
+            tmp.write("--file\n")
+            tmp.write(f"{file_arg}\n")
+        tmp_path = Path(tmp.name)
+    cmd: List[str] = [
+        sys.executable,
+        str(REPO_ROOT / "tools" / "pyrefly_bazel_query.py"),
+        f"@{tmp_path}",
+    ]
     env = _prepare_env(fixture_path, extra_env=extra_env, log_path=log_path)
-    return subprocess.run(
-        cmd,
-        cwd=REPO_ROOT,
-        env=env,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=REPO_ROOT,
+            env=env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    finally:
+        try:
+            tmp_path.unlink()
+        except FileNotFoundError:  # pragma: no cover - ignore clean-up race
+            pass
 
 
 def _load_snapshot(snapshot_path: Path) -> Dict[str, object]:
@@ -74,10 +89,13 @@ def _load_snapshot(snapshot_path: Path) -> Dict[str, object]:
 
 
 def _assert_distribution_entry(entry: Dict[str, object]) -> None:
-    required_keys = {"srcs", "deps", "python_version", "python_platform"}
+    required_keys = {"srcs", "deps", "python_version", "python_platform", "buildfile_path"}
     assert required_keys == set(entry.keys())
     assert entry["python_version"] == f"{sys.version_info.major}.{sys.version_info.minor}"
     assert entry["python_platform"] == system_python_platform()
+    assert isinstance(entry["buildfile_path"], str)
+    if entry["buildfile_path"]:
+        assert entry["buildfile_path"].startswith("//")
     assert isinstance(entry["deps"], list)
     for dep in entry["deps"]:
         assert isinstance(dep, str)
@@ -132,9 +150,15 @@ def test_dependency_resolution_captures_transitive_and_self_dependencies() -> No
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     db = payload["db"]
-    assert set(db["services"]["deps"]) == {"libs", "services", "click"}
-    assert "plugins" not in db, "plugins should not appear when querying only reporting files"
-    assert set(db["click"]["deps"]) == {"colorama"}
+    assert set(db["//services/reporting:report_cli"]["deps"]) == {
+        "//click:click_lib",
+        "//services/reporting:reporting_lib",
+    }
+    assert "//plugins:analyzer" not in db, "plugins should not appear when querying only reporting files"
+    assert set(db["//services/reporting:reporting_lib"]["deps"]) == {
+        "//libs/common:common_utils"
+    }
+    assert set(db["//click:click_lib"]["deps"]) == {"//colorama:colorama_lib"}
 
 
 def test_module_path_resolution_for_libraries_binaries_and_packages() -> None:
@@ -147,16 +171,16 @@ def test_module_path_resolution_for_libraries_binaries_and_packages() -> None:
     db = json.loads(result.stdout)["db"]
 
     # py_binary short module name
-    assert "run_report" in db["scripts"]["srcs"]
-    assert db["scripts"]["srcs"]["run_report"] == ["scripts/run_report.py"]
+    assert "run_report" in db["//scripts:run_report"]["srcs"]
+    assert db["//scripts:run_report"]["srcs"]["run_report"] == ["scripts/run_report.py"]
 
     # py_library full dotted path
-    assert "click.core" in db["click"]["srcs"]
-    assert "click" in db["click"]["srcs"]
+    assert "click.core" in db["//click:click_lib"]["srcs"]
+    assert "click" in db["//click:click_lib"]["srcs"]
 
     # package __init__ flattened correctly
-    assert "plugins" in db["plugins"]["srcs"]
-    assert "plugins.analyzer" in db["plugins"]["srcs"]
+    assert "plugins" in db["//plugins:analyzer"]["srcs"]
+    assert "plugins.analyzer" in db["//plugins:analyzer"]["srcs"]
 
 
 def test_invalid_file_path_returns_empty_database() -> None:
@@ -179,7 +203,7 @@ def test_no_arguments_returns_error_json() -> None:
         check=False,
     )
     assert result.returncode == 2
-    assert json.loads(result.stdout) == {"error": "No --file arguments provided"}
+    assert json.loads(result.stdout) == {"error": "Usage: script.py @/path/to/list.txt"}
 
 
 def test_command_handles_bazel_warnings(tmp_path: Path) -> None:
@@ -199,7 +223,7 @@ def test_command_handles_bazel_warnings(tmp_path: Path) -> None:
     result = _run_tool(["click/core.py"], fixture_path=warning_fixture)
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert "click" in payload["db"]
+    assert "//click:click_lib" in payload["db"]
 
 
 def test_python_version_and_platform_detection_consistent_with_runtime() -> None:

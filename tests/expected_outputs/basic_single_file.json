@@ -1,6 +1,6 @@
 {
   "db": {
-    "colorama": {
+    "//colorama:colorama_lib": {
       "srcs": {
         "colorama": [
           "colorama/__init__.py"
@@ -11,9 +11,10 @@
       },
       "deps": [],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//colorama/BUILD.bazel"
     },
-    "click": {
+    "//click:click_lib": {
       "srcs": {
         "click": [
           "click/__init__.py"
@@ -23,12 +24,13 @@
         ]
       },
       "deps": [
-        "colorama"
+        "//colorama:colorama_lib"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//click/BUILD.bazel"
     },
-    "libs": {
+    "//libs/common:common_utils": {
       "srcs": {
         "libs.common": [
           "libs/common/__init__.py"
@@ -41,12 +43,13 @@
         ]
       },
       "deps": [
-        "colorama"
+        "//colorama:colorama_lib"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//libs/common/BUILD.bazel"
     },
-    "my_project": {
+    "//my_project:core_lib": {
       "srcs": {
         "my_project": [
           "my_project/__init__.py"
@@ -59,18 +62,28 @@
         ],
         "my_project.utils.formatting": [
           "my_project/utils/formatting.py"
-        ],
+        ]
+      },
+      "deps": [
+        "//click:click_lib",
+        "//libs/common:common_utils"
+      ],
+      "python_version": "__PY_VERSION__",
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//my_project/BUILD.bazel"
+    },
+    "//my_project:main": {
+      "srcs": {
         "main": [
           "my_project/main.py"
         ]
       },
       "deps": [
-        "click",
-        "libs",
-        "my_project"
+        "//my_project:core_lib"
       ],
       "python_version": "__PY_VERSION__",
-      "python_platform": "__PY_PLATFORM__"
+      "python_platform": "__PY_PLATFORM__",
+      "buildfile_path": "//my_project/BUILD.bazel"
     }
   },
   "root": "__WORKSPACE_ROOT__"
