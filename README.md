@@ -37,7 +37,7 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install ".[test]"
 pytest
-pyrefly check -c pyrefly-ci.toml
+pyrefly check **/*.py
 ```
 
 > The pytest suite stubs Bazel with a lightweight shim so you can run it offline, while still exercising the real query script end-to-end.
